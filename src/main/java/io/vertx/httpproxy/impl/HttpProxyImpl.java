@@ -14,6 +14,7 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.StreamPriority;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
@@ -100,7 +101,7 @@ public class HttpProxyImpl implements HttpProxy {
     }
 
     @Override
-    public ReadStream<Buffer> apply(ReadStream<Buffer> s) {
+    public ReadStream<Buffer> apply(final ReadStream<Buffer> s) {
       return new ReadStream<Buffer>() {
         @Override
         public ReadStream<Buffer> exceptionHandler(Handler<Throwable> handler) {
@@ -129,6 +130,21 @@ public class HttpProxyImpl implements HttpProxy {
           s.resume();
           return this;
         }
+
+        /**
+         * Fetch the specified {@code amount} of elements. If the {@code ReadStream} has been paused, reading will
+         * recommence with the specified {@code amount} of items, otherwise the specified {@code amount} will
+         * be added to the current stream demand.
+         *
+         * @param amount
+         * @return a reference to this, so the API can be used fluently
+         */
+        @Override
+        public ReadStream<Buffer> fetch(final long amount) {
+          s.fetch(amount);
+          return this;
+        }
+
         @Override
         public ReadStream<Buffer> endHandler(Handler<Void> endHandler) {
           if (endHandler != null) {
@@ -148,6 +164,12 @@ public class HttpProxyImpl implements HttpProxy {
       return new CachedHttpClientResponse() {
         Handler<Buffer> dataHandler;
         Handler<Void> endHandler;
+
+        @Override
+        public HttpClientResponse fetch(final long amount) {
+          return this;
+        }
+
         @Override
         public HttpClientResponse resume() {
           return this;
@@ -222,6 +244,19 @@ public class HttpProxyImpl implements HttpProxy {
         public HttpClientRequest request() {
           throw new UnsupportedOperationException();
         }
+
+        /**
+         * Set an handler for stream priority changes.
+         * <p/>
+         * This is not implemented for HTTP/1.x.
+         *
+         * @param handler the handler to be called when the stream priority changes
+         */
+        @Override
+        public HttpClientResponse streamPriorityHandler(final Handler<StreamPriority> handler) {
+          return null;
+        }
+
         @Override
         public void send() {
           if (dataHandler != null) {
@@ -266,6 +301,16 @@ public class HttpProxyImpl implements HttpProxy {
         public HttpClientRequest resume() {
           return this;
         }
+
+        /**
+         * @param amount
+         * @deprecated this method will be removed in Vert.x 4
+         */
+        @Override
+        public HttpClientRequest fetch(final long amount) {
+          throw new UnsupportedOperationException();
+        }
+
         @Override
         public HttpClientRequest endHandler(Handler<Void> endHandler) {
           return this;
@@ -387,6 +432,17 @@ public class HttpProxyImpl implements HttpProxy {
         public HttpClientRequest pushHandler(Handler<HttpClientRequest> handler) {
           throw new UnsupportedOperationException();
         }
+
+        /**
+         * Reset this stream with the error code {@code 0}.
+         *
+         * @see #reset(long)
+         */
+        @Override
+        public boolean reset() {
+          return false;
+        }
+
         @Override
         public boolean reset(long code) {
           throw new UnsupportedOperationException();
@@ -403,6 +459,46 @@ public class HttpProxyImpl implements HttpProxy {
         public HttpClientRequest writeCustomFrame(int type, int flags, Buffer payload) {
           throw new UnsupportedOperationException();
         }
+
+        /**
+         * @return the id of the stream of this response, {@literal -1} when it is not yet determined, i.e
+         * the request has not been yet sent or it is not supported HTTP/1.x
+         */
+        @Override
+        public int streamId() {
+          return 0;
+        }
+
+        /**
+         * Like {@link #writeCustomFrame(int, int, Buffer)} but with an {@link HttpFrame}.
+         *
+         * @param frame the frame to write
+         */
+        @Override
+        public HttpClientRequest writeCustomFrame(final HttpFrame frame) {
+          return null;
+        }
+
+        /**
+         * Sets the priority of the associated stream.
+         * <p/>
+         * This is not implemented for HTTP/1.x.
+         *
+         * @param streamPriority the priority of this request's stream
+         */
+        @Override
+        public HttpClientRequest setStreamPriority(final StreamPriority streamPriority) {
+          throw new UnsupportedOperationException();
+        }
+
+        /**
+         * @return the priority of the associated HTTP/2 stream for HTTP/2 otherwise {@code null}
+         */
+        @Override
+        public StreamPriority getStreamPriority() {
+          throw new UnsupportedOperationException();
+        }
+
         @Override
         public boolean writeQueueFull() {
           return false;

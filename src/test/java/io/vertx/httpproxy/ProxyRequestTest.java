@@ -458,6 +458,20 @@ public class ProxyRequestTest extends ProxyTestBase {
       return this;
     }
 
+    /**
+     * Fetch the specified {@code amount} of elements. If the {@code ReadStream} has been paused, reading will
+     * recommence with the specified {@code amount} of items, otherwise the specified {@code amount} will
+     * be added to the current stream demand.
+     *
+     * @param amount
+     * @return a reference to this, so the API can be used fluently
+     */
+    @Override
+    public ReadStream<Buffer> fetch(final long amount) {
+      stream.fetch(amount);
+      return this;
+    }
+
     @Override
     public ReadStream<Buffer> exceptionHandler(Handler<Throwable> handler) {
       exceptionHandler = handler;

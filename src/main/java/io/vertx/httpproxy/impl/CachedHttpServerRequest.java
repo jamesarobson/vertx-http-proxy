@@ -11,6 +11,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.http.StreamPriority;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.net.SocketAddress;
 
@@ -54,6 +55,12 @@ class CachedHttpServerRequest implements HttpServerRequest {
         endHandler.handle(null);
       }
     }
+    return this;
+  }
+
+  @Override
+  public HttpServerRequest fetch(final long amount) {
+    request.fetch(amount);
     return this;
   }
 
@@ -111,6 +118,14 @@ class CachedHttpServerRequest implements HttpServerRequest {
   @Override
   public String host() {
     return request.host();
+  }
+
+  /**
+   * @return the total number of bytes read for the body of the request.
+   */
+  @Override
+  public long bytesRead() {
+    return request.bytesRead();
   }
 
   @Override
@@ -211,5 +226,18 @@ class CachedHttpServerRequest implements HttpServerRequest {
   @Override
   public HttpConnection connection() {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Set an handler for stream priority changes
+   * <p>
+   * This is not implemented for HTTP/1.x.
+   *
+   * @param handler the handler to be called when stream priority changes
+   */
+  @Override
+  public HttpServerRequest streamPriorityHandler(final Handler<StreamPriority> handler) {
+    request.streamPriorityHandler(handler);
+    return this;
   }
 }
